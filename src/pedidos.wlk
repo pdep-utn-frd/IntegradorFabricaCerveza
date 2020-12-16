@@ -1,18 +1,36 @@
 class Pedido {
-	const property cerveza
-	const property cantidad
-	const property distancia
+	var property cerveza = null
+	const property cantidad = 1
+	const property distancia = 0
 
-	method costoPedido() = cantidad * cerveza.costo()
+	method costo() = cantidad * cerveza.costo()
 
-	method costoTotalPedido(distribuidor) = self.costoPedido() + self.importeComision(distribuidor) - self.importeDescuento(distribuidor)
+	method costoTotal(distribuidor) = self.costo() + self.importeComision(distribuidor) - self.importeDescuento(distribuidor)
 
-	method importeComision(distribuidor) =	self.costoPedido() * distribuidor.comision()
+	method importeComision(distribuidor) =	self.costo() * distribuidor.comision()
 	
-	method importeDescuento(distribuidor) =	self.costoPedido() * distribuidor.descuento(self)
+	method importeDescuento(distribuidor) =	self.costo() * distribuidor.descuento(self)
 
 	method superaIbuPermitido(ibuMaximo) = cerveza.ibu() < ibuMaximo
 
+}
+
+class PedidoCompuesto inherits Pedido{
+	const pedidos = []
+	
+	method agregarPedido(pedido){
+		pedidos.add(pedido)
+	}
+	
+	override method cantidad() = pedidos.sum{pp => pp.cantidad()}
+	
+	override method distancia() = pedidos.max{pp => pp.distancia()}.distancia()
+	
+	override method costo() = pedidos.sum{pp => pp.costo()}
+	
+	override method importeDescuento(distribuidor) = pedidos.sum{pp=>pp.importeDescuento(distribuidor)}
+		
+	override method superaIbuPermitido(ibuMaximo) = pedidos.any{pp=>pp.superaIbuPermitido(ibuMaximo)} 
 }
 
 class Distribuidor {

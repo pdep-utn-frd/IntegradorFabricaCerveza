@@ -1,0 +1,43 @@
+import cerveza.*
+import pedidos.*
+
+describe "Test pedidos compuestos"{
+	
+	const clasica = new Clasica(lupulo = lupuloLocal, levadura = levaduraFermentacionAlta)
+	const lager = new Lager(lupulo = lupuloImportado, aditivos = 2)
+	const porter = new Porter(lupulo = lupuloImportado, graduacion = 9)
+	
+	const distribuidorLosTresBirreros = new Distribuidor(comision = 0.05, promocion = new PromocionPorCantidad(cantidadMinima = 3))
+	const distribuidorSinPromocion = new Distribuidor(comision = 0, promocion = sinPromocion)
+	
+	const pedido1 = new Pedido(cantidad = 5, distancia = 10, cerveza = clasica)
+	const pedido2 = new Pedido(cantidad = 7, distancia = 2, cerveza = lager)
+	const pedido3 = new Pedido(cantidad = 4, distancia = 6, cerveza = porter)
+	
+	const pedidoCompuesto1 = new PedidoCompuesto(pedidos = [pedido1,pedido2])
+	const pedidoCompuesto2 = new PedidoCompuesto(pedidos = [pedido3])
+
+
+test "Hacer un pedido compuesto y ver las cantidades de lotes, distancia y precio"{
+	
+	assert.equals(12, pedidoCompuesto1.cantidad())
+	assert.equals(10, pedidoCompuesto1.distancia())
+	assert.equals(12100, pedidoCompuesto1.costo())
+}
+
+test "Pedidos compuestos con distribuidor con promocion por distancia"{
+	
+	assert.equals(12177,pedidoCompuesto1.costoTotal(distribuidorLosTresBirreros))
+}
+
+test "El costo total de un pedidoCompuesto con distribuidor sin promocion (y comision nula) es la suma de los costos de los subpedidos"{
+	assert.equals( pedido1.costo() + pedido2.costo(), pedidoCompuesto1.costoTotal(distribuidorSinPromocion))
+}
+
+test "Un pedido compuesto que tiene como subpedido a otro pedido compuesto"{
+	
+	pedidoCompuesto1.agregarPedido(pedidoCompuesto2)
+	assert.equals(17900, pedidoCompuesto1.costo())
+	
+}
+}
