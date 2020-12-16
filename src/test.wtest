@@ -1,0 +1,89 @@
+import cerveza.*
+import pedidos.*
+
+describe "fabricacion de cerveza" {
+
+	var loteClasica
+	var loteLager
+	var lotePorter
+	var distribuidorLosTresBirreros
+	var pedidoDeLosTresBirreros
+	var distribuidorMoe
+	var pedidoDeMoe
+	var segundoPedidoDeMoe
+	var clasicaIlegal
+	var pedidoIlegal
+
+	fixture {
+		loteClasica = new Clasica(lupulo = lupuloLocal, levadura = levaduraFermentacionAlta)
+		loteLager = new Lager(lupulo = lupuloImportado, aditivos = 2)
+		lotePorter = new Porter(lupulo = lupuloImportado, graduacion = 9)
+		distribuidorLosTresBirreros = new Distribuidor(comision = 0.05, promocion = new PromocionPorCantidad(cantidadMinima = 3))
+		pedidoDeLosTresBirreros = new Pedido(cerveza = loteClasica, cantidad = 4, distancia = 4)
+		distribuidorMoe = new Distribuidor(comision = 0.07, promocion = new PromocionPorCantidad(cantidadMinima = 6))
+		pedidoDeMoe = new Pedido(cerveza = loteClasica, cantidad = 4, distancia = 4)
+		segundoPedidoDeMoe = new Pedido(cerveza = loteClasica, cantidad = 4, distancia = 4)
+		clasicaIlegal = new Clasica(lupulo = lupuloLocal, levadura = levaduraFermentacionAlta, azucar = 50)
+		pedidoIlegal = new Pedido(cerveza= clasicaIlegal, cantidad = 4, distancia = 4)
+	}
+
+	test "El costo total de un lote de una cerveza Clásica con lúpulo local y levadura de fermentación alta es de $880" {
+		assert.equals(880, loteClasica.costo())
+	}
+
+	test "El costo total de un lote de una cerveza Lager con lúpulo importado y 2 grs de aditivos es de $1100" {
+		assert.equals(1100, loteLager.costo())
+	}
+
+	test "El costo de producción de un lote de una cerveza Porter con lúpulo importado y 9% de alcohol es de $1450" {
+		assert.equals(1450, lotePorter.costo())
+	}
+
+	test "Si el distribuidor 'Los Tres Birreros' da descuentos para pedidos de más de 3 lotes y se queda con una comisión del 5%, el costo del pedido es de 3520" {
+		// costo total del pedido lote clasica (880) * 4 = 3520
+		// comision del distribuidor es 0.05 = 176
+		// aplica descuento (el de clasica es 0.05) = 176 
+		assert.equals(3520, pedidoDeLosTresBirreros.costoTotalPedido(distribuidorLosTresBirreros))
+	}
+
+	test "Si el distribuidor 'Moe' da descuentos para pedidos de más de 6 lotes y se queda con una comisión del 7%, el costo del pedido es de 3766.4" {
+		// costo total del pedido lote clasica (880) * 4 = 3520
+		// comision del distribuidor es 0.07 = 246.4
+		// NO aplica descuento
+		assert.equals(3766.4, pedidoDeMoe.costoTotalPedido(distribuidorMoe))
+	}
+
+	test "al concretar todos los pedido de Moe hace que la lista de pendientes quede vacía" {
+		distribuidorMoe.agregarPedido(pedidoDeMoe)
+		distribuidorMoe.agregarPedido(segundoPedidoDeMoe)
+		assert.equals(2, distribuidorMoe.pedidosPendientes().size())
+		distribuidorMoe.entregarTodosLosPedidos()
+		assert.equals(0, distribuidorMoe.pedidosPendientes().size())
+	}
+
+	test "el total cobrado por el distribuidor 'Moe' por dos pedidos" {
+		distribuidorMoe.agregarPedido(pedidoDeMoe)
+		distribuidorMoe.agregarPedido(segundoPedidoDeMoe)
+		distribuidorMoe.entregarTodosLosPedidos()
+		assert.equals(492.8, distribuidorMoe.totalCobrado())
+	}
+
+	test "ambos pedidos son del mismo lote por lo tanto los lotes pendientes de clasica es de 2, y de porter y lager, 0" {
+		distribuidorMoe.agregarPedido(pedidoDeMoe)
+		distribuidorMoe.agregarPedido(segundoPedidoDeMoe)
+		assert.equals(2, distribuidorMoe.cantidadLotesPedidosPendientes(loteClasica))
+		assert.equals(0, distribuidorMoe.cantidadLotesPedidosPendientes(loteLager))
+		assert.equals(0, distribuidorMoe.cantidadLotesPedidosPendientes(lotePorter))
+		
+		distribuidorMoe.entregarTodosLosPedidos()
+		assert.equals(0, distribuidorMoe.cantidadLotesPedidosPendientes(loteClasica))
+	}
+	
+	test "cerveza con ibu mayor ibu legal cancela pedido" {
+		distribuidorMoe.agregarPedido(pedidoIlegal)
+		assert.equals(1, distribuidorMoe.pedidosPendientes().size())
+		distribuidorMoe.verificarIbuLegal(42)
+		assert.equals(0, distribuidorMoe.pedidosPendientes().size())
+	}
+
+}
